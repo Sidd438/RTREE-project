@@ -19,13 +19,13 @@ typedef struct rect{
 
 typedef struct node{
     int count;
-    bool is_leaf;
     RECT* entries[MAX_ENTRIES+1];
 } NODE;
 
 
 typedef struct rtree{
     NODE *root;
+    int height;
 } RTREE;
 
 
@@ -33,14 +33,13 @@ RTREE* create_rtree(){
     RTREE *rtree = (RTREE*)malloc(sizeof(RTREE));
     rtree->root = (NODE*)malloc(sizeof(NODE));
     rtree->root->count = 0;
-    rtree->root->is_leaf = true;
+    rtree->height=1;
     return rtree;
 }
 
 NODE* create_node(){
     NODE *node = (NODE*)malloc(sizeof(NODE));
     node->count = 0;
-    node->is_leaf = true;
     for(int i = 0; i<MAX_ENTRIES+1; i++){
         node->entries[i] = (RECT*)malloc(sizeof(RECT));
         node->entries[i]->child = NULL;
@@ -221,7 +220,7 @@ void split_node(NODE *node, int index){
 }
 
 void insert_into_node(NODE *node, RECT *rect){
-    if(node->is_leaf){
+    if(node->entries[0]->child == NULL){
         // for(int i = 0; i < node->count; i++){
         //     if(node->entries[i]->child == NULL){
         //         node->entries[i] = rect;
@@ -251,7 +250,7 @@ void insert_into_tree(RTREE *rtree, RECT *rect){
         insert_into_node(rtree->root, rect);
         if(rtree->root->count > MAX_ENTRIES){
             NODE *new_root = create_node();
-            new_root->is_leaf = 0;
+
             new_root->count = 1;
             new_root->entries[0]->child = rtree->root;
             for(int i = 0; i<rtree->root->count; i++){
@@ -276,9 +275,10 @@ void insert_into_tree(RTREE *rtree, RECT *rect){
                     }
                 }
             }
-
             split_node(new_root, 0);
+
             rtree->root = new_root;
+            rtree->height++;
         }
     }
 }
@@ -287,24 +287,20 @@ void insert_into_tree(RTREE *rtree, RECT *rect){
 
 void print_node(NODE *node, int level){
     for(int i = 0; i < level; i++){
-        printf(" ");
+        printf("    ");
     }
     printf("Node: %d\n", level);
     for(int i = 0; i < level; i++){
-        printf(" ");
-    }
-    printf("Is leaf: %d\n", node->is_leaf);
-    for(int i = 0; i < level; i++){
-        printf(" ");
+        printf("    ");
     }
     printf("Count: %d\n", node->count);
     for(int i = 0; i < node->count; i++){
         for(int j = 0; j < level; j++){
-            printf(" ");
+            printf("    ");
         }
         printf("Entry: %d\n", i);
         for(int j = 0; j < level; j++){
-            printf(" ");
+            printf("    ");
         }
         printf("Min: ");
         for(int j = 0; j < DIMS; j++){
@@ -312,19 +308,17 @@ void print_node(NODE *node, int level){
         }
         printf("\n");
         for(int j = 0; j < level; j++){
-            printf(" ");
+            printf("    ");
         }
         printf("Max: ");
         for(int j = 0; j < DIMS; j++){
             printf("%d ", node->entries[i]->max[j]);
         }
         printf("\n");
-        if(!node->is_leaf){
+        if(node->entries[i]->child != NULL){
             print_node(node->entries[i]->child, level + 1);
         }
     }
-    printf("\n");
-    printf("\n");
 }
 
 void print_rtree(RTREE *rtree)
