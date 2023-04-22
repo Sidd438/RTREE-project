@@ -12,7 +12,7 @@
 typedef struct rect{
     int min[DIMS];
     int max[DIMS];
-    NODE *child;
+    struct node *child;
 
 } RECT;
 
@@ -20,7 +20,7 @@ typedef struct rect{
 typedef struct node{
     int count;
     bool is_leaf;
-    RECT entries[MAX_ENTRIES+1];
+    RECT* entries[MAX_ENTRIES+1];
 } NODE;
 
 
@@ -37,27 +37,76 @@ RTREE* create_rtree(){
     return rtree;
 }
 
+NODE* create_node(){
+    NODE *node = (NODE*)malloc(sizeof(NODE));
+    node->count = 0;
+    node->is_leaf = true;
+    for(int i = 0; i<MAX_ENTRIES+1; i++){
+        node->entries[i] = (RECT*)malloc(sizeof(RECT));
+        node->entries[i]->child = NULL;
+        node->entries[i]->min[0] = 0;
+        node->entries[i]->min[1] = 0;
+        node->entries[i]->max[0] = 0;
+        node->entries[i]->max[1] = 0;
+    }
+    return node;
+}
+
+void update_dims(NODE* node, RECT* rect, int index){
+    for(int i = 0; i<DIMS; i++){
+        if(node->entries[index]->min[i] > rect->min[i]){
+            node->entries[index]->min[i] = rect->min[i];
+        }
+        if(node->entries[index]->max[i] < rect->max[i]){
+            node->entries[index]->max[i] = rect->max[i];
+        }
+    }
+}
+
+int choose_subtree(NODE *node, RECT *rect)
+{
+    int min_area = 0;
+    int min_index = 0;
+    for (int i = 0; i < node->count; i++)
+    {
+        int area = 1;
+        for (int j = 0; j < DIMS; j++)
+        {
+            area *= node->entries[i]->max[j] - node->entries[i]->min[j];
+        }
+        if (area < min_area | i == 0)
+        {
+            min_area = area;
+            min_index = i;
+        }
+    }
+    update_dims(node, rect, min_index);
+    return min_index;
+}
+
 void split_node(NODE *node, int index){
-    RECT main_rect = node->entries[index];
+    RECT* main_rect = node->entries[index];
     RECT* new_rect = (RECT*)malloc(sizeof(RECT));
-    float centerx = (main_rect.max[0] + main_rect.min[0]) / 2;
-    float centery = (main_rect.max[1] + main_rect.min[1]) / 2;
-    NODE *split_node = main_rect.child;
-    RECT n1[MAX_ENTRIES];
-    RECT n2[MAX_ENTRIES];
+    float centerx = (main_rect->max[0] + main_rect->min[0]) / 2;
+    float centery = (main_rect->max[1] + main_rect->min[1]) / 2;
+    NODE *split_node = main_rect->child;
+    NODE *node1 = create_node();
+    NODE *node2 = create_node();
+    RECT* n1[MAX_ENTRIES];
+    RECT* n2[MAX_ENTRIES];
     int n1_count = 0;
     int n2_count = 0;
-    RECT c1[MAX_ENTRIES];
-    RECT c2[MAX_ENTRIES];
-    RECT c3[MAX_ENTRIES];
-    RECT c4[MAX_ENTRIES];
+    RECT* c1[MAX_ENTRIES];
+    RECT* c2[MAX_ENTRIES];
+    RECT* c3[MAX_ENTRIES];
+    RECT* c4[MAX_ENTRIES];
     int c1_count = 0;
     int c2_count = 0;
     int c3_count = 0;
     int c4_count = 0;
     for(int i = 0; i< split_node->count; i++){
-        float x = (split_node->entries[i].max[0] + split_node->entries[i].min[0]) / 2;
-        float y = (split_node->entries[i].max[1] + split_node->entries[i].min[1]) / 2;
+        float x = (split_node->entries[i]->max[0] + split_node->entries[i]->min[0]) / 2;
+        float y = (split_node->entries[i]->max[1] + split_node->entries[i]->min[1]) / 2;
         if(x < centerx && y < centery){
             c1[c1_count] = split_node->entries[i];
             c1_count++;
@@ -113,51 +162,58 @@ void split_node(NODE *node, int index){
             n1_count++;
         }
     }
-    main_rect.child = n1;
-    new_rect->child = n2;
-    node->entries[index] = main_rect;
-    node->entries[node->count] = *new_rect;
-    for(int i = 0; i<main_rect.child->count; i++){
+    for(int i = 0; i<n1_count; i++){
+        node1->entries[i] = n1[i];
+        node1->count++;
+    }
+    for(int i = 0; i<n2_count; i++){
+        node2->entries[i] = n2[i];
+        node2->count++;
+    }
+    main_rect->child = node1;
+    new_rect->child = node2;
+    node->entries[node->count] = new_rect;
+    for(int i = 0; i<main_rect->child->count; i++){
         if(i==0){
-            main_rect.min[0] = main_rect.child->entries[i].min[0];
-            main_rect.min[1] = main_rect.child->entries[i].min[1];
-            main_rect.max[0] = main_rect.child->entries[i].max[0];
-            main_rect.max[1] = main_rect.child->entries[i].max[1];
+            main_rect->min[0] = main_rect->child->entries[i]->min[0];
+            main_rect->min[1] = main_rect->child->entries[i]->min[1];
+            main_rect->max[0] = main_rect->child->entries[i]->max[0];
+            main_rect->max[1] = main_rect->child->entries[i]->max[1];
         }
         else{
-            if(main_rect.child->entries[i].min[0] < main_rect.min[0]){
-                main_rect.min[0] = main_rect.child->entries[i].min[0];
+            if(main_rect->child->entries[i]->min[0] < main_rect->min[0]){
+                main_rect->min[0] = main_rect->child->entries[i]->min[0];
             }
-            if(main_rect.child->entries[i].min[1] < main_rect.min[1]){
-                main_rect.min[1] = main_rect.child->entries[i].min[1];
+            if(main_rect->child->entries[i]->min[1] < main_rect->min[1]){
+                main_rect->min[1] = main_rect->child->entries[i]->min[1];
             }
-            if(main_rect.child->entries[i].max[0] > main_rect.max[0]){
-                main_rect.max[0] = main_rect.child->entries[i].max[0];
+            if(main_rect->child->entries[i]->max[0] > main_rect->max[0]){
+                main_rect->max[0] = main_rect->child->entries[i]->max[0];
             }
-            if(main_rect.child->entries[i].max[1] > main_rect.max[1]){
-                main_rect.max[1] = main_rect.child->entries[i].max[1];
+            if(main_rect->child->entries[i]->max[1] > main_rect->max[1]){
+                main_rect->max[1] = main_rect->child->entries[i]->max[1];
             }
         }
     }
     for(int i = 0; i<new_rect->child->count; i++){
         if(i==0){
-            new_rect->min[0] = new_rect->child->entries[i].min[0];
-            new_rect->min[1] = new_rect->child->entries[i].min[1];
-            new_rect->max[0] = new_rect->child->entries[i].max[0];
-            new_rect->max[1] = new_rect->child->entries[i].max[1];
+            new_rect->min[0] = new_rect->child->entries[i]->min[0];
+            new_rect->min[1] = new_rect->child->entries[i]->min[1];
+            new_rect->max[0] = new_rect->child->entries[i]->max[0];
+            new_rect->max[1] = new_rect->child->entries[i]->max[1];
         }
         else{
-            if(new_rect->child->entries[i].min[0] < new_rect->min[0]){
-                new_rect->min[0] = new_rect->child->entries[i].min[0];
+            if(new_rect->child->entries[i]->min[0] < new_rect->min[0]){
+                new_rect->min[0] = new_rect->child->entries[i]->min[0];
             }
-            if(new_rect->child->entries[i].min[1] < new_rect->min[1]){
-                new_rect->min[1] = new_rect->child->entries[i].min[1];
+            if(new_rect->child->entries[i]->min[1] < new_rect->min[1]){
+                new_rect->min[1] = new_rect->child->entries[i]->min[1];
             }
-            if(new_rect->child->entries[i].max[0] > new_rect->max[0]){
-                new_rect->max[0] = new_rect->child->entries[i].max[0];
+            if(new_rect->child->entries[i]->max[0] > new_rect->max[0]){
+                new_rect->max[0] = new_rect->child->entries[i]->max[0];
             }
-            if(new_rect->child->entries[i].max[1] > new_rect->max[1]){
-                new_rect->max[1] = new_rect->child->entries[i].max[1];
+            if(new_rect->child->entries[i]->max[1] > new_rect->max[1]){
+                new_rect->max[1] = new_rect->child->entries[i]->max[1];
             }
         }
     }
@@ -166,44 +222,29 @@ void split_node(NODE *node, int index){
 
 void insert_into_node(NODE *node, RECT *rect){
     if(node->is_leaf){
-        for(int i = 0; i < node->count; i++){
-            if(node->entries[i].child == NULL){
-                node->entries[i] = *rect;
-                return;
-            }
-        }
-        node->entries[node->count] = *rect;
+        // for(int i = 0; i < node->count; i++){
+        //     if(node->entries[i]->child == NULL){
+        //         node->entries[i] = rect;
+        //         return;
+        //     }
+        // }
+        node->entries[node->count] = rect;
         node->count++;
     }
     else{
         int index = choose_subtree(node, rect);
-        insert_into_node(node->entries[index].child, rect);
-        if(node->entries[index].child->count > MAX_ENTRIES){
+        insert_into_node(node->entries[index]->child, rect);
+        if(node->entries[index]->child->count > MAX_ENTRIES){
             split_node(node, index);
         }
     }
 }
 
-int choose_subtree(NODE *node, RECT *rect){
-    int min_area = 0;
-    int min_index = 0;
-    for(int i = 0; i < node->count; i++){
-        int area = 1;
-        for(int j = 0; j < DIMS; j++){
-            area *= node->entries[i].max[j] - node->entries[i].min[j];
-        }
-        if(area < min_area | i == 0){
-            min_area = area;
-            min_index = i;
-        }
 
-    }
-    return min_index;
-}
 
 void insert_into_tree(RTREE *rtree, RECT *rect){
     if(rtree->root->count == 0){
-        rtree->root->entries[0] = *rect;
+        rtree->root->entries[0] = rect;
         rtree->root->count++;
     }
     else{
@@ -212,22 +253,51 @@ void insert_into_tree(RTREE *rtree, RECT *rect){
             NODE *new_root = create_node();
             new_root->is_leaf = 0;
             new_root->count = 1;
-            new_root->entries[0].child = rtree->root;
+            new_root->entries[0]->child = rtree->root;
+            for(int i = 0; i<rtree->root->count; i++){
+                if(i==0){
+                    new_root->entries[0]->min[0] = rtree->root->entries[i]->min[0];
+                    new_root->entries[0]->min[1] = rtree->root->entries[i]->min[1];
+                    new_root->entries[0]->max[0] = rtree->root->entries[i]->max[0];
+                    new_root->entries[0]->max[1] = rtree->root->entries[i]->max[1];
+
+                }else{
+                    if(rtree->root->entries[i]->min[0] < new_root->entries[0]->min[0]){
+                        new_root->entries[0]->min[0] = rtree->root->entries[i]->min[0];
+                    }
+                    if(rtree->root->entries[i]->min[1] < new_root->entries[0]->min[1]){
+                        new_root->entries[0]->min[1] = rtree->root->entries[i]->min[1];
+                    }
+                    if(rtree->root->entries[i]->max[0] > new_root->entries[0]->max[0]){
+                        new_root->entries[0]->max[0] = rtree->root->entries[i]->max[0];
+                    }
+                    if(rtree->root->entries[i]->max[1] > new_root->entries[0]->max[1]){
+                        new_root->entries[0]->max[1] = rtree->root->entries[i]->max[1];
+                    }
+                }
+            }
+
             split_node(new_root, 0);
             rtree->root = new_root;
         }
     }
 }
 
-void print_rtree(RTREE *rtree){
-    print_node(rtree->root, 0);
-}
+
 
 void print_node(NODE *node, int level){
     for(int i = 0; i < level; i++){
         printf(" ");
     }
     printf("Node: %d\n", level);
+    for(int i = 0; i < level; i++){
+        printf(" ");
+    }
+    printf("Is leaf: %d\n", node->is_leaf);
+    for(int i = 0; i < level; i++){
+        printf(" ");
+    }
+    printf("Count: %d\n", node->count);
     for(int i = 0; i < node->count; i++){
         for(int j = 0; j < level; j++){
             printf(" ");
@@ -238,7 +308,7 @@ void print_node(NODE *node, int level){
         }
         printf("Min: ");
         for(int j = 0; j < DIMS; j++){
-            printf("%d ", node->entries[i].min[j]);
+            printf("%d ", node->entries[i]->min[j]);
         }
         printf("\n");
         for(int j = 0; j < level; j++){
@@ -246,11 +316,40 @@ void print_node(NODE *node, int level){
         }
         printf("Max: ");
         for(int j = 0; j < DIMS; j++){
-            printf("%d ", node->entries[i].max[j]);
+            printf("%d ", node->entries[i]->max[j]);
         }
         printf("\n");
         if(!node->is_leaf){
-            print_node(node->entries[i].child, level + 1);
+            print_node(node->entries[i]->child, level + 1);
         }
     }
+    printf("\n");
+    printf("\n");
+}
+
+void print_rtree(RTREE *rtree)
+{
+    print_node(rtree->root, 0);
+}
+
+RECT* create_rect(int min_x, int min_y, int max_x, int max_y){
+    RECT *rect = (RECT*)malloc(sizeof(RECT));
+    rect->min[0] = min_x;
+    rect->min[1] = min_y;
+    rect->max[0] = max_x;
+    rect->max[1] = max_y;
+    rect->child = NULL;
+    return rect;
+}
+
+int main(){
+    FILE* fp = fopen("data.txt", "r");
+    int x;
+    int y;
+    RTREE *rtree = create_rtree();
+    while(fscanf(fp, "%d %d\n", &x, &y) != EOF){
+        RECT* rect = create_rect(x, y, x, y);
+        insert_into_tree(rtree, rect);
+    }
+    print_rtree(rtree);
 }
