@@ -107,19 +107,19 @@ void split_node(NODE *node, int index){
     for(int i = 0; i< split_node->count; i++){
         float x = (split_node->entries[i]->max[0] + split_node->entries[i]->min[0]) / 2;
         float y = (split_node->entries[i]->max[1] + split_node->entries[i]->min[1]) / 2;
-        if(x < centerx && y < centery){
+        if(x <= centerx && y <= centery){
             c1[c1_count] = split_node->entries[i];
             c1_count++;
         }
-        else if(x > centerx && y < centery){
+        else if(x >= centerx && y <= centery){
             c2[c2_count] = split_node->entries[i];
             c2_count++;
         }
-        else if(x < centerx && y > centery){
+        else if(x <= centerx && y >= centery){
             c3[c3_count] = split_node->entries[i];
             c3_count++;
         }
-        else if(x > centerx && y > centery){
+        else if(x >= centerx && y >= centery){
             c4[c4_count] = split_node->entries[i];
             c4_count++;
         }
