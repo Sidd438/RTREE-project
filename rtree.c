@@ -51,6 +51,14 @@ NODE* create_node(){
     return node;
 }
 
+bool is_leaf(NODE *node){
+    if(node->entries[0]->child == NULL){
+        return true;
+    }
+    return false;
+}
+
+
 void update_dims(NODE* node, RECT* rect, int index){
     for(int i = 0; i<DIMS; i++){
         if(node->entries[index]->min[i] > rect->min[i]){
@@ -219,22 +227,39 @@ void split_node(NODE *node, int index){
     node->count++;
 }
 
-void insert_into_node(NODE *node, RECT *rect){
+NODE* choose_leaf(NODE *node, RECT *rect, NODE** parents, int* indexes, int* parent_count){
     if(node->entries[0]->child == NULL){
-        // for(int i = 0; i < node->count; i++){
-        //     if(node->entries[i]->child == NULL){
-        //         node->entries[i] = rect;
-        //         return;
-        //     }
-        // }
-        node->entries[node->count] = rect;
-        node->count++;
+        return node;
     }
     else{
         int index = choose_subtree(node, rect);
-        insert_into_node(node->entries[index]->child, rect);
-        if(node->entries[index]->child->count > MAX_ENTRIES){
-            split_node(node, index);
+        parents[*parent_count] = node;
+        indexes[*parent_count] = index;
+        *parent_count = *parent_count + 1;
+        return choose_leaf(node->entries[index]->child, rect, parents, indexes, parent_count);
+    }
+}
+
+void insert_into_leaf(NODE *node, RECT *rect){
+    node->entries[node->count] = rect;
+    node->count++;
+}
+
+void insert_into_node(NODE *node, RECT *rect, int height){
+    if(is_leaf(node)){
+        insert_into_leaf(node, rect);
+    }
+    else{
+        NODE ** parents = (NODE**)malloc(sizeof(NODE*)*height);
+        int * indexes = (int*)malloc(sizeof(int)*height);
+        int* count = (int*)malloc(sizeof(int));
+        *count = 0;
+        NODE* leaf = choose_leaf(node, rect, parents, indexes, count);
+        insert_into_leaf(leaf, rect);
+        for(int i = *count-1; i>=0; i--){
+            if(parents[i]->entries[indexes[i]]->child->count > MAX_ENTRIES){
+                split_node(parents[i], indexes[i]);
+            }
         }
     }
 }
@@ -247,7 +272,7 @@ void insert_into_tree(RTREE *rtree, RECT *rect){
         rtree->root->count++;
     }
     else{
-        insert_into_node(rtree->root, rect);
+        insert_into_node(rtree->root, rect, rtree->height);
         if(rtree->root->count > MAX_ENTRIES){
             NODE *new_root = create_node();
 
@@ -298,25 +323,31 @@ void print_node(NODE *node, int level){
         for(int j = 0; j < level; j++){
             printf("    ");
         }
-        printf("Entry: %d\n", i);
-        for(int j = 0; j < level; j++){
-            printf("    ");
-        }
-        printf("Min: ");
-        for(int j = 0; j < DIMS; j++){
-            printf("%d ", node->entries[i]->min[j]);
-        }
-        printf("\n");
-        for(int j = 0; j < level; j++){
-            printf("    ");
-        }
-        printf("Max: ");
-        for(int j = 0; j < DIMS; j++){
-            printf("%d ", node->entries[i]->max[j]);
-        }
-        printf("\n");
-        if(node->entries[i]->child != NULL){
-            print_node(node->entries[i]->child, level + 1);
+        printf("Entry: %d\n", i); 
+        if(is_leaf(node)){
+            for (int j = 0; j < level; j++)
+            {
+                printf("    ");
+            }
+            printf("Leaf: X-%d Y-%d\n", node->entries[i]->min[0], node->entries[i]->min[1]);
+        }else{
+            for (int j = 0; j < level; j++)
+            {
+                printf("    ");
+            }
+            printf("External Node\n");
+            for (int j = 0; j < level; j++)
+            {
+                printf("    ");
+            }
+            printf("Bottom Left: X-%d Y-%d\n", node->entries[i]->min[0], node->entries[i]->min[1]);
+            for (int j = 0; j < level; j++)
+            {
+                printf("    ");
+            }
+            printf("Top Right: X-%d Y-%d\n", node->entries[i]->max[0], node->entries[i]->max[1]);
+            print_node(node->entries[i]->child, level+1);
+
         }
     }
 }
