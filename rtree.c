@@ -438,8 +438,8 @@ RECT* create_rect(int min_x, int min_y, int max_x, int max_y){
     return rect;
 }
 
-int main(){
-    FILE* fp = fopen("data.txt", "r");
+int main(int c, char** v){
+    FILE* fp = fopen(v[1], "r");
     int x;
     int y;
     RTREE *rtree = create_rtree();
