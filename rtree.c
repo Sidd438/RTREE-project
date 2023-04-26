@@ -73,6 +73,7 @@ void update_dims(NODE* node, RECT* rect, int index){
 int choose_subtree(NODE *node, RECT *rect)
 {
     int min_area = 0;
+    int min_add_area = 0;
     int min_index = 0;
     for (int i = 0; i < node->count; i++)
     {
@@ -81,10 +82,35 @@ int choose_subtree(NODE *node, RECT *rect)
         {
             area *= node->entries[i]->max[j] - node->entries[i]->min[j];
         }
-        if (area < min_area | i == 0)
+        int x1 = node->entries[i]->min[0];
+        int y1 = node->entries[i]->min[1];
+        int x2 = node->entries[i]->max[0];
+        int y2 = node->entries[i]->max[1];
+        if(x1 > rect->min[0]){
+            x1 = rect->min[0];
+        }
+        if(y1 > rect->min[1]){
+            y1 = rect->min[1];
+        }
+        if(x2 < rect->max[0]){
+            x2 = rect->max[0];
+        }
+        if(y2 < rect->max[1]){
+            y2 = rect->max[1];
+        }
+        int enlarged_area = (x2 - x1) * (y2 - y1);
+        int add_area = enlarged_area - area;
+        if (min_add_area < add_area | i == 0)
         {
             min_area = area;
             min_index = i;
+            min_add_area = add_area;
+        }else if(min_add_area == add_area){
+            if(min_area > area){
+                min_area = area;
+                min_index = i;
+                min_add_area = add_area;
+            }
         }
     }
     update_dims(node, rect, min_index);
@@ -111,6 +137,8 @@ void split_node(NODE *node, int index){
     int c2_count = 0;
     int c3_count = 0;
     int c4_count = 0;
+    bool a = false;
+    bool b = false;
     for(int i = 0; i< split_node->count; i++){
         float x = (split_node->entries[i]->max[0] + split_node->entries[i]->min[0]) / 2;
         float y = (split_node->entries[i]->max[1] + split_node->entries[i]->min[1]) / 2;
@@ -123,26 +151,27 @@ void split_node(NODE *node, int index){
             c2_count++;
         }
         else if(x <= centerx && y >= centery){
-            c3[c3_count] = split_node->entries[i];
-            c3_count++;
-        }
-        else if(x >= centerx && y >= centery){
             c4[c4_count] = split_node->entries[i];
             c4_count++;
         }
+        else if(x >= centerx && y >= centery){
+            c3[c3_count] = split_node->entries[i];
+            c3_count++;
+        }
     }
-    if(c1_count > c4_count){
+    if(c1_count > c3_count){
+        a = true;
         for(int i = 0; i < c1_count; i++){
             n1[n1_count] = c1[i];
             n1_count++;
         }
-        for(int i = 0; i < c4_count; i++){
-            n2[n2_count] = c4[i];
+        for(int i = 0; i < c3_count; i++){
+            n2[n2_count] = c3[i];
             n2_count++;
         }
     }else{
-        for(int i = 0; i < c4_count; i++){
-            n1[n1_count] = c4[i];
+        for(int i = 0; i < c3_count; i++){
+            n1[n1_count] = c3[i];
             n1_count++;
         }
         for(int i = 0; i < c1_count; i++){
@@ -150,24 +179,66 @@ void split_node(NODE *node, int index){
             n2_count++;
         }
     }
-    if(c2_count > c3_count){
+    if(c2_count > c4_count){
+        b = true;
         for(int i = 0; i < c2_count; i++){
             n2[n2_count] = c2[i];
             n2_count++;
         }
-        for(int i = 0; i < c3_count; i++){
-            n1[n1_count] = c3[i];
+        for(int i = 0; i < c4_count; i++){
+            n1[n1_count] = c4[i];
             n1_count++;
         }
     }else{
-        for(int i = 0; i < c3_count; i++){
-            n2[n2_count] = c3[i];
+        for(int i = 0; i < c4_count; i++){
+            n2[n2_count] = c4[i];
             n2_count++;
         }
         for(int i = 0; i < c2_count; i++){
             n1[n1_count] = c2[i];
             n1_count++;
         }
+    }
+    bool splity = a^b;    
+    while(n1_count < MIN_ENTRIES){
+        int min_num = 0;
+        for(int k = 0; k < n2_count; k++){
+            if(splity){
+                if(n2[k]->min[1]-centerx < n2[min_num]->min[1]-centerx){
+                    min_num = k;
+                }
+            }else{
+                if(n2[k]->min[0]-centery < n2[min_num]->min[0]-centery){
+                    min_num = k;
+                }
+            }
+        }
+        n1[n1_count] = n2[min_num];
+        n1_count++;
+        for(int k = min_num; k < n2_count-1; k++){
+            n2[k] = n2[k+1];
+        }
+        n2_count--;
+    }
+    while(n2_count < MIN_ENTRIES){
+        int min_num = 0;
+        for(int k = 0; k < n1_count; k++){
+            if(splity){
+                if(n1[k]->max[1]-centerx < n1[min_num]->max[1]-centerx){
+                    min_num = k;
+                }
+            }else{
+                if(n1[k]->max[0]-centery < n1[min_num]->max[0]-centery){
+                    min_num = k;
+                }
+            }
+        }
+        n2[n2_count] = n1[min_num];
+        n2_count++;
+        for(int k = min_num; k < n1_count-1; k++){
+            n1[k] = n1[k+1];
+        }
+        n1_count--;
     }
     for(int i = 0; i<n1_count; i++){
         node1->entries[i] = n1[i];
