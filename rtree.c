@@ -8,7 +8,7 @@
 #define MAX_ENTRIES 4
 #define MIN_ENTRIES 2
 
-
+//each rectangle contains a <DIMS>-dimension minimum and maximum value representing two diagonaly opposite points of the rectangle
 typedef struct rect{
     int min[DIMS];
     int max[DIMS];
@@ -16,19 +16,19 @@ typedef struct rect{
 
 } RECT;
 
-
+//each node contains multiple rectangles
 typedef struct node{
     int count;
     RECT* entries[MAX_ENTRIES+1];
 } NODE;
 
-
+//contains a pointer to the root of the tree and height of the tree
 typedef struct rtree{
     NODE *root;
     int height;
 } RTREE;
 
-
+//to initialize the r tree with a node without any rectangle in it
 RTREE* create_rtree(){
     RTREE *rtree = (RTREE*)malloc(sizeof(RTREE));
     rtree->root = (NODE*)malloc(sizeof(NODE));
@@ -36,7 +36,7 @@ RTREE* create_rtree(){
     rtree->height=1;
     return rtree;
 }
-
+//create a blank node with all entries having minimum and maximum values= (0,0)
 NODE* create_node(){
     NODE *node = (NODE*)malloc(sizeof(NODE));
     node->count = 0;
@@ -50,7 +50,7 @@ NODE* create_node(){
     }
     return node;
 }
-
+//check if a node is leaf or not
 bool is_leaf(NODE *node){
     if(node->entries[0]->child == NULL){
         return true;
@@ -59,7 +59,7 @@ bool is_leaf(NODE *node){
 }
 
 
-void update_dims(NODE* node, RECT* rect, int index){
+void update_dims(NODE* node, RECT* rect, int index){ //size of rectangle changed according to the rect being added at index specified
     for(int i = 0; i<DIMS; i++){
         if(node->entries[index]->min[i] > rect->min[i]){
             node->entries[index]->min[i] = rect->min[i];
@@ -70,6 +70,7 @@ void update_dims(NODE* node, RECT* rect, int index){
     }
 }
 
+//to find which subtree is ideal to insert data by finding which rectangle 
 int choose_subtree(NODE *node, RECT *rect)
 {
     int min_area = 0;
@@ -80,7 +81,7 @@ int choose_subtree(NODE *node, RECT *rect)
         int area = 1;
         for (int j = 0; j < DIMS; j++)
         {
-            area *= node->entries[i]->max[j] - node->entries[i]->min[j];
+            area *= node->entries[i]->max[j] - node->entries[i]->min[j]; // finds total area of each rectangle
         }
         int x1 = node->entries[i]->min[0];
         int y1 = node->entries[i]->min[1];
@@ -98,14 +99,16 @@ int choose_subtree(NODE *node, RECT *rect)
         if(y2 < rect->max[1]){
             y2 = rect->max[1];
         }
-        int enlarged_area = (x2 - x1) * (y2 - y1);
-        int add_area = enlarged_area - area;
-        if (min_add_area < add_area | i == 0)
+        int enlarged_area = (x2 - x1) * (y2 - y1); // new area created if rect was inserted
+        int add_area = enlarged_area - area; // additional area added
+        if (min_add_area < add_area | i == 0) 
         {
             min_area = area;
-            min_index = i;
+            min_index = i;  // finding which node will have minimum change in area if rect was inserted
             min_add_area = add_area;
-        }else if(min_add_area == add_area){
+        }
+        else if(min_add_area == add_area) // if the area added is equal to minimum area added calculated up till that point then add rect in the smaller rectangle
+        {
             if(min_area > area){
                 min_area = area;
                 min_index = i;
@@ -113,7 +116,7 @@ int choose_subtree(NODE *node, RECT *rect)
             }
         }
     }
-    update_dims(node, rect, min_index);
+    update_dims(node, rect, min_index); 
     return min_index;
 }
 
@@ -140,8 +143,8 @@ void split_node(NODE *node, int index){
     bool a = false;
     bool b = false;
     for(int i = 0; i< split_node->count; i++){
-        float x = (split_node->entries[i]->max[0] + split_node->entries[i]->min[0]) / 2;
-        float y = (split_node->entries[i]->max[1] + split_node->entries[i]->min[1]) / 2;
+        float x = ((float) split_node->entries[i]->max[0] + (float) split_node->entries[i]->min[0]) / 2;
+        float y = ((float) split_node->entries[i]->max[1] + (float) split_node->entries[i]->min[1]) / 2;
         if(x <= centerx && y <= centery){
             c1[c1_count] = split_node->entries[i];
             c1_count++;
@@ -298,37 +301,45 @@ void split_node(NODE *node, int index){
     node->count++;
 }
 
+
+
+
+
+//find ideal point of insertion of data
 NODE* choose_leaf(NODE *node, RECT *rect, NODE** parents, int* indexes, int* parent_count){
-    if(node->entries[0]->child == NULL){
+    if(is_leaf(node)){ // leaf node found for insertion
         return node;
     }
     else{
-        int index = choose_subtree(node, rect);
-        parents[*parent_count] = node;
-        indexes[*parent_count] = index;
+        int index = choose_subtree(node, rect); //current node is not node so searching deeper
+        parents[*parent_count] = node; //current node entered into the parents array
+        indexes[*parent_count] = index;  // indexes in each node where rect was inserted
         *parent_count = *parent_count + 1;
-        return choose_leaf(node->entries[index]->child, rect, parents, indexes, parent_count);
+        return choose_leaf(node->entries[index]->child, rect, parents, indexes, parent_count); //recursively trying to find the leaf 
     }
 }
 
-void insert_into_leaf(NODE *node, RECT *rect){
+void insert_into_leaf(NODE *node, RECT *rect){ //inserts rect into a leaf node 
     node->entries[node->count] = rect;
     node->count++;
 }
 
+
+
 void insert_into_node(NODE *node, RECT *rect, int height){
-    if(is_leaf(node)){
+    if(is_leaf(node)){  // if node is a leaf node insert into leaf as one of the entries
         insert_into_leaf(node, rect);
     }
     else{
-        NODE ** parents = (NODE**)malloc(sizeof(NODE*)*height);
-        int * indexes = (int*)malloc(sizeof(int)*height);
+        NODE ** parents = (NODE**)malloc(sizeof(NODE*)*height);//an array of parent nodes containing nodes traversed till current position reached by traversal
+        int* indexes = (int*)malloc(sizeof(int)*height); //array containing which specific index was chosen in each node
         int* count = (int*)malloc(sizeof(int));
         *count = 0;
-        NODE* leaf = choose_leaf(node, rect, parents, indexes, count);
-        insert_into_leaf(leaf, rect);
+        NODE* leaf = choose_leaf(node, rect, parents, indexes, count); // parents contains all the nodes traversed while finding the leaf node, indexes contains the entry index in each node whose child was taken as next node
+        insert_into_leaf(leaf, rect); // insert into the position found
         for(int i = *count-1; i>=0; i--){
-            if(parents[i]->entries[indexes[i]]->child->count > MAX_ENTRIES){
+            if(parents[i]->entries[indexes[i]]->child->count > MAX_ENTRIES) // if number of entries in the current node where rect was inserted is greater than MAX_ENTRIES then do node splitting
+            {
                 split_node(parents[i], indexes[i]);
             }
         }
@@ -338,17 +349,19 @@ void insert_into_node(NODE *node, RECT *rect, int height){
 
 
 void insert_into_tree(RTREE *rtree, RECT *rect){
-    if(rtree->root->count == 0){
+    if(rtree->root->count == 0) // if no entires in root node only increase count and add rect as first entry
+    {
         rtree->root->entries[0] = rect;
         rtree->root->count++;
     }
     else{
         insert_into_node(rtree->root, rect, rtree->height);
-        if(rtree->root->count > MAX_ENTRIES){
+        if(rtree->root->count > MAX_ENTRIES) // special case of node spitting for root node
+        {
             NODE *new_root = create_node();
 
             new_root->count = 1;
-            new_root->entries[0]->child = rtree->root;
+            new_root->entries[0]->child = rtree->root; // new_root will have one entry enclosing all the rectangles in root
             for(int i = 0; i<rtree->root->count; i++){
                 if(i==0){
                     new_root->entries[0]->min[0] = rtree->root->entries[i]->min[0];
@@ -373,7 +386,7 @@ void insert_into_tree(RTREE *rtree, RECT *rect){
             }
             split_node(new_root, 0);
 
-            rtree->root = new_root;
+            rtree->root = new_root; // newly created node set as root
             rtree->height++;
         }
     }
@@ -428,7 +441,7 @@ void print_rtree(RTREE *rtree)
     print_node(rtree->root, 0);
 }
 
-RECT* create_rect(int min_x, int min_y, int max_x, int max_y){
+RECT* create_rect(int min_x, int min_y, int max_x, int max_y){ // creates an instance of struct rect
     RECT *rect = (RECT*)malloc(sizeof(RECT));
     rect->min[0] = min_x;
     rect->min[1] = min_y;
@@ -438,13 +451,13 @@ RECT* create_rect(int min_x, int min_y, int max_x, int max_y){
     return rect;
 }
 
-int main(int c, char** v){
-    FILE* fp = fopen(v[1], "r");
+int main(){
+    FILE* fp = fopen("data.txt", "r");
     int x;
     int y;
     RTREE *rtree = create_rtree();
     while(fscanf(fp, "%d %d\n", &x, &y) != EOF){
-        RECT* rect = create_rect(x, y, x, y);
+        RECT* rect = create_rect(x, y, x, y); // reading 2d data line by line and making it a rectangle and inserting into tree
         insert_into_tree(rtree, rect);
     }
     print_rtree(rtree);

@@ -307,7 +307,7 @@ void split_node(NODE *node, int index){
 
 //find ideal point of insertion of data
 NODE* choose_leaf(NODE *node, RECT *rect, NODE** parents, int* indexes, int* parent_count){
-    if(node->entries[0]->child == NULL){ // leaf node found for insertion
+    if(is_leaf(node)){ // leaf node found for insertion
         return node;
     }
     else{
@@ -332,10 +332,10 @@ void insert_into_node(NODE *node, RECT *rect, int height){
     }
     else{
         NODE ** parents = (NODE**)malloc(sizeof(NODE*)*height);//an array of parent nodes containing nodes traversed till current position reached by traversal
-        int * indexes = (int*)malloc(sizeof(int)*height); //array containing which specific index was chosen in each node
+        int* indexes = (int*)malloc(sizeof(int)*height); //array containing which specific index was chosen in each node
         int* count = (int*)malloc(sizeof(int));
         *count = 0;
-        NODE* leaf = choose_leaf(node, rect, parents, indexes, count);
+        NODE* leaf = choose_leaf(node, rect, parents, indexes, count); // parents contains all the nodes traversed while finding the leaf node, indexes contains the entry index in each node whose child was taken as next node
         insert_into_leaf(leaf, rect); // insert into the position found
         for(int i = *count-1; i>=0; i--){
             if(parents[i]->entries[indexes[i]]->child->count > MAX_ENTRIES) // if number of entries in the current node where rect was inserted is greater than MAX_ENTRIES then do node splitting
