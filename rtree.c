@@ -3,7 +3,6 @@
 #include <string.h>
 #include <stdbool.h>
 
-
 #define DIMS 2
 #define MAX_ENTRIES 4
 #define MIN_ENTRIES 2
@@ -128,14 +127,14 @@ void split_node(NODE *node, int index){
     NODE *split_node = main_rect->child;
     NODE *node1 = create_node();
     NODE *node2 = create_node();
-    RECT* n1[MAX_ENTRIES];
-    RECT* n2[MAX_ENTRIES];
+    RECT* n1[MAX_ENTRIES+1];
+    RECT* n2[MAX_ENTRIES+1];
     int n1_count = 0;
     int n2_count = 0;
-    RECT* c1[MAX_ENTRIES];
-    RECT* c2[MAX_ENTRIES];
-    RECT* c3[MAX_ENTRIES];
-    RECT* c4[MAX_ENTRIES];
+    RECT* c1[MAX_ENTRIES+1];
+    RECT* c2[MAX_ENTRIES+1];
+    RECT* c3[MAX_ENTRIES+1];
+    RECT* c4[MAX_ENTRIES+1];
     int c1_count = 0;
     int c2_count = 0;
     int c3_count = 0;
@@ -394,7 +393,7 @@ void insert_into_tree(RTREE *rtree, RECT *rect){
 
 
 
-void print_node(NODE *node, int level){
+void print_node(NODE *node, int level, int* total){
     for(int i = 0; i < level; i++){
         printf("    ");
     }
@@ -414,6 +413,7 @@ void print_node(NODE *node, int level){
                 printf("    ");
             }
             printf("Leaf: X-%d Y-%d\n", node->entries[i]->min[0], node->entries[i]->min[1]);
+            *total = *total + 1;
         }else{
             for (int j = 0; j < level; j++)
             {
@@ -430,15 +430,15 @@ void print_node(NODE *node, int level){
                 printf("    ");
             }
             printf("Top Right: X-%d Y-%d\n", node->entries[i]->max[0], node->entries[i]->max[1]);
-            print_node(node->entries[i]->child, level+1);
+            print_node(node->entries[i]->child, level+1, total);
 
         }
     }
 }
 
-void print_rtree(RTREE *rtree)
+void print_rtree(RTREE *rtree, int* total)
 {
-    print_node(rtree->root, 0);
+    print_node(rtree->root, 0, total);
 }
 
 RECT* create_rect(int min_x, int min_y, int max_x, int max_y){ // creates an instance of struct rect
@@ -452,7 +452,7 @@ RECT* create_rect(int min_x, int min_y, int max_x, int max_y){ // creates an ins
 }
 
 int main(){
-    FILE* fp = fopen("data.txt", "r");
+    FILE* fp = fopen("big.txt", "r");
     int x;
     int y;
     RTREE *rtree = create_rtree();
@@ -460,5 +460,8 @@ int main(){
         RECT* rect = create_rect(x, y, x, y); // reading 2d data line by line and making it a rectangle and inserting into tree
         insert_into_tree(rtree, rect);
     }
-    print_rtree(rtree);
+    int* total = (int*)malloc(sizeof(int));
+    *total = 0;
+    print_rtree(rtree, total);
+    printf("Total Leaf Nodes: %d\n", *total);
 }
