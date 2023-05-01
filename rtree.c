@@ -324,6 +324,16 @@ void insert_into_leaf(NODE *node, RECT *rect){ //inserts rect into a leaf node
     node->count++;
 }
 
+void adjust_tree(NODE** parents, int* indexes, int count){
+    for (int i = count - 1; i >= 0; i--) // traverses the parents array backwards so that if a previous splitting causes some parent node to have more than 4 entries then it can be split again using the parent's parent
+    {
+        if (parents[i]->entries[indexes[i]]->child->count > MAX_ENTRIES) // if number of entries in the current node where rect was inserted is greater than MAX_ENTRIES then do node splitting
+        {
+            split_node(parents[i], indexes[i]);
+        }
+    }
+}
+
 
 
 void insert_into_node(NODE *node, RECT *rect, int height){
@@ -337,12 +347,8 @@ void insert_into_node(NODE *node, RECT *rect, int height){
         *count = 0;
         NODE* leaf = choose_leaf(node, rect, parents, indexes, count); // parents contains all the nodes traversed while finding the leaf node, indexes contains the entry index in each node whose child was taken as next node
         insert_into_leaf(leaf, rect); // insert into the position found
-        for(int i = *count-1; i>=0; i--){
-            if(parents[i]->entries[indexes[i]]->child->count > MAX_ENTRIES) // if number of entries in the current node where rect was inserted is greater than MAX_ENTRIES then do node splitting
-            {
-                split_node(parents[i], indexes[i]);
-            }
-        }
+        adjust_tree(parents, indexes, *count); // adjust the tree if any node has more than 4 entries
+        
     }
 }
 

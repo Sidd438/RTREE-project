@@ -1,4 +1,4 @@
-a.exe
+*.exe
 test*.*
 big.txt
 full.txt
