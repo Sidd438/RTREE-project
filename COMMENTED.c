@@ -60,13 +60,17 @@ bool is_leaf(NODE *node){
 
 
 void update_dims(NODE* node, RECT* rect, int index){ //size of rectangle changed according to the rect being added at index specified
-    for(int i = 0; i<DIMS; i++){
-        if(node->entries[index]->min[i] > rect->min[i]){
-            node->entries[index]->min[i] = rect->min[i];
-        }
-        if(node->entries[index]->max[i] < rect->max[i]){
-            node->entries[index]->max[i] = rect->max[i];
-        }
+    if(node->entries[index]->min[0] > rect->min[0]){
+        node->entries[index]->min[0] = rect->min[0];
+    }
+    if(node->entries[index]->min[1] > rect->min[1]){
+        node->entries[index]->min[1] = rect->min[1];
+    }
+    if(node->entries[index]->max[0] < rect->max[0]){
+        node->entries[index]->max[0] = rect->max[0];
+    }
+    if(node->entries[index]->max[1] < rect->max[1]){
+        node->entries[index]->max[1] = rect->max[1];
     }
 }
 
@@ -451,8 +455,8 @@ RECT* create_rect(int min_x, int min_y, int max_x, int max_y){ // creates an ins
     return rect;
 }
 
-int main(){
-    FILE* fp = fopen("data.txt", "r");
+int main(int argc, char const *argv[]){
+    FILE* fp = fopen(argv[1], "r");
     int x;
     int y;
     RTREE *rtree = create_rtree();

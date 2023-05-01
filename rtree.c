@@ -458,8 +458,8 @@ RECT* create_rect(int min_x, int min_y, int max_x, int max_y){ // creates an ins
     return rect;
 }
 
-int main(){
-    FILE* fp = fopen("big.txt", "r");
+int main(int argc, char const *argv[]){
+    FILE* fp = fopen(argv[1], "r");
     int x;
     int y;
     RTREE *rtree = create_rtree();
