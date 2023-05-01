@@ -240,6 +240,7 @@ void split_node(NODE *node, int index){
         for(int k = min_num; k < n1_count-1; k++){
             n1[k] = n1[k+1];
         }
+        n1[n1_count-1] = NULL;
         n1_count--;
     }
     for(int i = 0; i<n1_count; i++){
