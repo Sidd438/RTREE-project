@@ -131,6 +131,8 @@ void split_node(NODE *node, int index){
     RECT* n2[MAX_ENTRIES+1];
     int n1_count = 0;
     int n2_count = 0;
+    int n1_max[2] = {0,0};
+    int n1_min[2] = {0,0};
     RECT* c1[MAX_ENTRIES+1];
     RECT* c2[MAX_ENTRIES+1];
     RECT* c3[MAX_ENTRIES+1];
@@ -139,6 +141,10 @@ void split_node(NODE *node, int index){
     int c2_count = 0;
     int c3_count = 0;
     int c4_count = 0;
+    int c2_min[2] = {0,0};
+    int c2_max[2] = {0,0};
+    int c4_min[2] = {0, 0};
+    int c4_max[2] = {0, 0};
     bool a = false;
     bool b = false;
     for(int i = 0; i< split_node->count; i++){
@@ -161,6 +167,34 @@ void split_node(NODE *node, int index){
             c3_count++;
         }
     }
+    for(int i = 0; i<c2_count; i++){
+        if(c2[i]->max[0] > c2_max[0]){
+            c2_max[0] = c2[i]->max[0];
+        }
+        if(c2[i]->max[1] > c2_max[1]){
+            c2_max[1] = c2[i]->max[1];
+        }
+        if(c2[i]->min[0] < c2_min[0]){
+            c2_min[0] = c2[i]->min[0];
+        }
+        if(c2[i]->min[1] < c2_min[1]){
+            c2_min[1] = c2[i]->min[1];
+        }
+    }
+    for(int i = 0; i<c4_count; i++){
+        if(c4[i]->max[0] > c4_max[0]){
+            c4_max[0] = c4[i]->max[0];
+        }
+        if(c4[i]->max[1] > c4_max[1]){
+            c4_max[1] = c4[i]->max[1];
+        }
+        if(c4[i]->min[0] < c4_min[0]){
+            c4_min[0] = c4[i]->min[0];
+        }
+        if(c4[i]->min[1] < c4_min[1]){
+            c4_min[1] = c4[i]->min[1];
+        }
+    }
     if(c1_count > c3_count){
         a = true;
         for(int i = 0; i < c1_count; i++){
@@ -181,6 +215,20 @@ void split_node(NODE *node, int index){
             n2_count++;
         }
     }
+    for(int i = 0; i<n1_count; i++){
+        if(n1[i]->max[0] > n1_max[0]){
+            n1_max[0] = n1[i]->max[0];
+        }
+        if(n1[i]->max[1] > n1_max[1]){
+            n1_max[1] = n1[i]->max[1];
+        }
+        if(n1[i]->min[0] < n1_min[0]){
+            n1_min[0] = n1[i]->min[0];
+        }
+        if(n1[i]->min[1] < n1_min[1]){
+            n1_min[1] = n1[i]->min[1];
+        }
+    }
     if(c2_count > c4_count){
         b = true;
         for(int i = 0; i < c2_count; i++){
@@ -191,7 +239,7 @@ void split_node(NODE *node, int index){
             n1[n1_count] = c4[i];
             n1_count++;
         }
-    }else{
+    }else if(c4_count > c2_count){
         for(int i = 0; i < c4_count; i++){
             n2[n2_count] = c4[i];
             n2_count++;
@@ -200,6 +248,85 @@ void split_node(NODE *node, int index){
             n1[n1_count] = c2[i];
             n1_count++;
         }
+    }else{
+        int c2_enlarged_area = 0;
+        int c4_enlarged_area = 0;
+        int c2_area = (c2_max[0]-c2_min[0])*(c2_max[1]-c2_min[1]);
+        int c4_area = (c4_max[0]-c4_min[0])*(c4_max[1]-c4_min[1]); 
+        int n1_area = (n1_max[0]-n1_min[0])*(n1_max[1]-n1_min[1]);
+        int x_min = n1_min[0];
+        int x_max = n1_max[0];
+        int y_min = n1_min[1];
+        int y_max = n1_max[1];
+        if(c2_min[0] < x_min){
+            x_min = c2_min[0];
+        }
+        if(c2_max[0] > x_max){
+            x_max = c2_max[0];
+        }
+        if(c2_min[1] < y_min){
+            y_min = c2_min[1];
+        }
+        if(c2_max[1] > y_max){
+            y_max = c2_max[1];
+        }
+        c2_enlarged_area = (x_max-x_min)*(y_max-y_min)-n1_area;
+        if(c4_min[0] < x_min){
+            x_min = c4_min[0];
+        }
+        if(c4_max[0] > x_max){
+            x_max = c4_max[0];
+        }
+        if(c4_min[1] < y_min){
+            y_min = c4_min[1];
+        }
+        if(c4_max[1] > y_max){
+            y_max = c4_max[1];
+        }
+        c4_enlarged_area = (x_max-x_min)*(y_max-y_min)-n1_area;
+        if(c2_enlarged_area > c4_enlarged_area){
+            b = true;
+            for(int i = 0; i < c2_count; i++){
+                n2[n2_count] = c2[i];
+                n2_count++;
+            }
+            for(int i = 0; i < c4_count; i++){
+                n1[n1_count] = c4[i];
+                n1_count++;
+            }
+        }else if(c4_enlarged_area > c2_enlarged_area){
+            for(int i = 0; i < c4_count; i++){
+                n2[n2_count] = c4[i];
+                n2_count++;
+            }
+            for(int i = 0; i < c2_count; i++){
+                n1[n1_count] = c2[i];
+                n1_count++;
+            }
+        }else{
+            if(c2_area > c4_area){
+                b = true;
+                for(int i = 0; i < c2_count; i++){
+                    n2[n2_count] = c2[i];
+                    n2_count++;
+                }
+                for(int i = 0; i < c4_count; i++){
+                    n1[n1_count] = c4[i];
+                    n1_count++;
+                }
+            }else{
+                for(int i = 0; i < c4_count; i++){
+                    n2[n2_count] = c4[i];
+                    n2_count++;
+                }
+                for(int i = 0; i < c2_count; i++){
+                    n1[n1_count] = c2[i];
+                    n1_count++;
+                }
+            }
+        }
+
+
     }
     bool splity = a^b;    
     while(n1_count < MIN_ENTRIES){
