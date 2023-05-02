@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdbool.h>
 
 #define DIMS 2
@@ -127,16 +126,16 @@ void split_node(NODE *node, int index){
     NODE *split_node = main_rect->child;                         // Getting the concerned node as main_rect
     NODE *node1 = create_node();                                 // Creating a new node for splitting
     NODE *node2 = create_node();                                 // Creating a new node for splitting
-    RECT *n1[MAX_ENTRIES];                                       // Generating a RECT pointer array for getting the rectangles in node n1
-    RECT *n2[MAX_ENTRIES];                                       // Generating a RECT pointer array for getting the rectangles in node n2
+    RECT *n1[MAX_ENTRIES+1];                                       // Generating a RECT pointer array for getting the rectangles in node n1
+    RECT *n2[MAX_ENTRIES+1];                                       // Generating a RECT pointer array for getting the rectangles in node n2
     int n1_count = 0;                                            // initializing n1_count to 0, which is the counter for children to be added in n1
     int n2_count = 0;                                            // initializing n2_count to 0, which is the counter for children to be added in n2
     int n1_max[2] = {0,0};
     int n1_min[2] = {0,0};
-    RECT *c1[MAX_ENTRIES];                                       // Array for the pointer of RECT, in which rectangles of corner 1 will be added
-    RECT *c2[MAX_ENTRIES];                                       // Array for the pointer of RECT, in which rectangles of corner 2 will be added
-    RECT *c3[MAX_ENTRIES];                                       // Array for the pointer of RECT, in which rectangles of corner 3 will be added
-    RECT *c4[MAX_ENTRIES];                                       // Array for the pointer of RECT, in which rectangles of corner 4 will be added
+    RECT *c1[MAX_ENTRIES+1];                                       // Array for the pointer of RECT, in which rectangles of corner 1 will be added
+    RECT *c2[MAX_ENTRIES+1];                                       // Array for the pointer of RECT, in which rectangles of corner 2 will be added
+    RECT *c3[MAX_ENTRIES+1];                                       // Array for the pointer of RECT, in which rectangles of corner 3 will be added
+    RECT *c4[MAX_ENTRIES+1];                                       // Array for the pointer of RECT, in which rectangles of corner 4 will be added
     int c1_count = 0;                                            // initializing c1_count to 0, which is the counter for children to be added in corner c1
     int c2_count = 0;                                            // initializing c2_count to 0, which is the counter for children to be added in corner c2
     int c3_count = 0;                                            // initializing c3_count to 0, which is the counter for children to be added in corner c3
@@ -350,11 +349,11 @@ void split_node(NODE *node, int index){
         int min_num = 0;
         for(int k = 0; k < n2_count; k++){
             if(splity){
-                if(n2[k]->min[1]-centerx < n2[min_num]->min[1]-centerx){
+                if(abs(n2[k]->min[1]-centery) < abs(n2[min_num]->min[1]-centery)){
                     min_num = k;
                 }
             }else{
-                if(n2[k]->min[0]-centery < n2[min_num]->min[0]-centery){
+                if(abs(n2[k]->min[0]-centerx) < abs(n2[min_num]->min[0]-centerx)){
                     min_num = k;
                 }
             }
@@ -370,11 +369,11 @@ void split_node(NODE *node, int index){
         int min_num = 0;
         for(int k = 0; k < n1_count; k++){
             if(splity){
-                if(n1[k]->max[1]-centerx < n1[min_num]->max[1]-centerx){
+                if(abs(n1[k]->max[1]-centerx) < abs(n1[min_num]->max[1]-centerx)){
                     min_num = k;
                 }
             }else{
-                if(n1[k]->max[0]-centery < n1[min_num]->max[0]-centery){
+                if(abs(n1[k]->max[0]-centery) < abs(n1[min_num]->max[0]-centery)){
                     min_num = k;
                 }
             }
@@ -548,7 +547,14 @@ void print_node(NODE* node, int level, int* total)
     {
         printf("    ");
     }
-    printf("External Node: %d\n", level);
+    if(level == 0){
+        printf("Root Node: %d\n", level);
+    }
+    else if(is_leaf(node)){
+        printf("Leaf Node: %d\n", level);
+    }else{
+        printf("External Node: %d\n", level);
+    }
     for (int i = 0; i < level; i++)
     {
         printf("    ");
@@ -556,22 +562,22 @@ void print_node(NODE* node, int level, int* total)
     printf("Count: %d\n", node->count); // prints the count
     for (int i = 0; i < node->count; i++)
     {
-        for (int j = 0; j < level; j++)
-        {
-            printf("    ");
-        }
-        printf("Rectangle Number: %d\n", i);
         if (is_leaf(node))
         { // if the node is leaf print the leaf
             for (int j = 0; j < level; j++)
             {
                 printf("    ");
             }
-            printf("Leaf: X-%d Y-%d\n", node->entries[i]->min[0], node->entries[i]->min[1]);
+            printf("Point: X-%d Y-%d\n", node->entries[i]->min[0], node->entries[i]->min[1]);
             *total = *total + 1;
         }
         else
         {
+            for (int j = 0; j < level; j++)
+            {
+                printf("    ");
+            }
+            printf("Rectangle Number: %d\n", i);
             for (int j = 0; j < level; j++)
             {
                 printf("    ");
