@@ -144,8 +144,8 @@ void split_node(NODE *node, int index){
     int c2_max[2] = {0,0};
     int c4_min[2] = {0, 0};
     int c4_max[2] = {0, 0};
-    bool a = false;                                              // Initializing a to False
-    bool b = false;                                              // Initializing b to False
+    bool a = false;                                              // Initializing a to False. a is true whenever c1 is added to n1
+    bool b = false;                                              // Initializing b to False. b is true whenever c2 is added to n2
     for (int i = 0; i < split_node->count; i++)
     {                                                                                    // all the split_node(s) are traversed using a for loop.
         float x = (split_node->entries[i]->max[0] + split_node->entries[i]->min[0]) / 2; // x coordinate of center of split_node(s) is calculated
@@ -172,31 +172,31 @@ void split_node(NODE *node, int index){
             c3_count++;
         }
     }
-    for(int i = 0; i<c2_count; i++){
-        if(c2[i]->max[0] > c2_max[0]){
+    for(int i = 0; i<c2_count; i++){ //Updates the MBR boundaries for objects in c2. Used later for resolving ties.
+        if(c2[i]->max[0] > c2_max[0]){ //Updating the minimum X coordinate of MBR
             c2_max[0] = c2[i]->max[0];
         }
-        if(c2[i]->max[1] > c2_max[1]){
+        if(c2[i]->max[1] > c2_max[1]){ //Updating the maximum X coordinate of MBR
             c2_max[1] = c2[i]->max[1];
         }
-        if(c2[i]->min[0] < c2_min[0]){
+        if(c2[i]->min[0] < c2_min[0]){ //Updating the minimum Y coordinate of MBR
             c2_min[0] = c2[i]->min[0];
         }
-        if(c2[i]->min[1] < c2_min[1]){
+        if(c2[i]->min[1] < c2_min[1]){ //Updating the maximum X coordinate of MBR
             c2_min[1] = c2[i]->min[1];
         }
     }
-    for(int i = 0; i<c4_count; i++){
-        if(c4[i]->max[0] > c4_max[0]){
+    for(int i = 0; i<c4_count; i++){ //Updates the MBR boundaries for objects in c4. Used later for resolving ties.
+        if(c4[i]->max[0] > c4_max[0]){ //Updating the minimum X coordinate of MBR
             c4_max[0] = c4[i]->max[0];
         }
-        if(c4[i]->max[1] > c4_max[1]){
+        if(c4[i]->max[1] > c4_max[1]){ //Updating the maximum X coordinate of MBR
             c4_max[1] = c4[i]->max[1];
         }
-        if(c4[i]->min[0] < c4_min[0]){
+        if(c4[i]->min[0] < c4_min[0]){ //Updating the minimum Y coordinate of MBR
             c4_min[0] = c4[i]->min[0];
         }
-        if(c4[i]->min[1] < c4_min[1]){
+        if(c4[i]->min[1] < c4_min[1]){ //Updating the maximum Y coordinate of MBR
             c4_min[1] = c4[i]->min[1];
         }
     }
@@ -228,17 +228,17 @@ void split_node(NODE *node, int index){
             n2_count++;
         }
     }
-    for(int i = 0; i<n1_count; i++){
-        if(n1[i]->max[0] > n1_max[0]){
+    for(int i = 0; i<n1_count; i++){ //Updates the MBR boundaries for objects in n1. Used later for resolving ties.
+        if(n1[i]->max[0] > n1_max[0]){ //Updating the minimum X coordinate of MBR
             n1_max[0] = n1[i]->max[0];
         }
-        if(n1[i]->max[1] > n1_max[1]){
+        if(n1[i]->max[1] > n1_max[1]){ //Updating the maximum X coordinate of MBR
             n1_max[1] = n1[i]->max[1];
         }
-        if(n1[i]->min[0] < n1_min[0]){
+        if(n1[i]->min[0] < n1_min[0]){ //Updating the minimum Y coordinate of MBR
             n1_min[0] = n1[i]->min[0];
         }
-        if(n1[i]->min[1] < n1_min[1]){
+        if(n1[i]->min[1] < n1_min[1]){ //Updating the maximum X coordinate of MBR
             n1_min[1] = n1[i]->min[1];
         }
     }
@@ -266,44 +266,46 @@ void split_node(NODE *node, int index){
         }
     }
     else
-    {
-        int c2_enlarged_area = 0;
-        int c4_enlarged_area = 0;
-        int c2_area = (c2_max[0]-c2_min[0])*(c2_max[1]-c2_min[1]);
-        int c4_area = (c4_max[0]-c4_min[0])*(c4_max[1]-c4_min[1]); 
-        int n1_area = (n1_max[0]-n1_min[0])*(n1_max[1]-n1_min[1]);
-        int x_min = n1_min[0];
-        int x_max = n1_max[0];
-        int y_min = n1_min[1];
-        int y_max = n1_max[1];
+    { // This portion of the code is used to break the tie if c2 count = c4 count
+        int c2_enlarged_area = 0; //Stores the increase in area if c2's elements are added to n1
+        int c4_enlarged_area = 0; //Stores the increase in area if c4's elements are added to n1
+        int c2_area = (c2_max[0]-c2_min[0])*(c2_max[1]-c2_min[1]); //Total area of MBR for objects in c2
+        int c4_area = (c4_max[0]-c4_min[0])*(c4_max[1]-c4_min[1]); //Total area of MBR for objects in c4
+        int n1_area = (n1_max[0]-n1_min[0])*(n1_max[1]-n1_min[1]); //Total area of MBR for objects currently in n1 before adding c2 or c4
+        int x_min = n1_min[0]; //Minimum x-coordinate for MBR of n1
+        int x_max = n1_max[0]; //Maximum x-coordinate for MBR of n1
+        int y_min = n1_min[1]; //Minimum y-coordinate for MBR of n1
+        int y_max = n1_max[1]; //Maximum y-coordinate for MBR of n1
         if(c2_min[0] < x_min){
-            x_min = c2_min[0];
+            x_min = c2_min[0]; //Updating minimum x-coordinate of MBR if c2 is added to n1
         }
         if(c2_max[0] > x_max){
-            x_max = c2_max[0];
+            x_max = c2_max[0]; //Updating maximum x-coordinate of MBR if c2 is added to n1
         }
         if(c2_min[1] < y_min){
-            y_min = c2_min[1];
+            y_min = c2_min[1]; //Updating minimum y-coordinate of MBR if c2 is added to n1
         }
         if(c2_max[1] > y_max){
-            y_max = c2_max[1];
+            y_max = c2_max[1]; //Updating maximum y-coordinate of MBR if c2 is added to n1
         }
-        c2_enlarged_area = (x_max-x_min)*(y_max-y_min)-n1_area;
+        c2_enlarged_area = (x_max-x_min)*(y_max-y_min)-n1_area; //Calculating increase in area of MBR if c2 is added to n1
+
         if(c4_min[0] < x_min){
-            x_min = c4_min[0];
+            x_min = c4_min[0]; //Updating minimum x-coordinate of MBR if c4 is added to n1
         }
         if(c4_max[0] > x_max){
-            x_max = c4_max[0];
+            x_max = c4_max[0]; //Updating maximum x-coordinate of MBR if c4 is added to n1
         }
         if(c4_min[1] < y_min){
-            y_min = c4_min[1];
+            y_min = c4_min[1]; //Updating minimum y-coordinate of MBR if c4 is added to n1
         }
         if(c4_max[1] > y_max){
-            y_max = c4_max[1];
+            y_max = c4_max[1]; //Updating maximum y-coordinate of MBR if c4 is added to n1
         }
-        c4_enlarged_area = (x_max-x_min)*(y_max-y_min)-n1_area;
-        if(c2_enlarged_area > c4_enlarged_area){
-            b = true;
+        c4_enlarged_area = (x_max-x_min)*(y_max-y_min)-n1_area; //Calculating increase in area of MBR if c4 is added to n1
+
+        if(c2_enlarged_area > c4_enlarged_area){ //If enlarged area of c4 is less than c2 we ad c4 to n1
+            b = true; 
             for(int i = 0; i < c2_count; i++){
                 n2[n2_count] = c2[i];
                 n2_count++;
@@ -312,7 +314,7 @@ void split_node(NODE *node, int index){
                 n1[n1_count] = c4[i];
                 n1_count++;
             }
-        }else if(c4_enlarged_area > c2_enlarged_area){
+        }else if(c4_enlarged_area > c2_enlarged_area){ //If enlarged area of c2 is less than c4 we add c2 to n1
             for(int i = 0; i < c4_count; i++){
                 n2[n2_count] = c4[i];
                 n2_count++;
@@ -321,8 +323,8 @@ void split_node(NODE *node, int index){
                 n1[n1_count] = c2[i];
                 n1_count++;
             }
-        }else{
-            if(c2_area > c4_area){
+        }else{ //This is used to resolve the tie in case we cannot resolve it using the enlarged area. In this case we use the area of MBR to break tie
+            if(c2_area > c4_area){ //If area of MBR of c4 is less than c2 we add c4 to n1
                 b = true;
                 for(int i = 0; i < c2_count; i++){
                     n2[n2_count] = c2[i];
@@ -332,9 +334,9 @@ void split_node(NODE *node, int index){
                     n1[n1_count] = c4[i];
                     n1_count++;
                 }
-            }else{
+            }else{ // If area of MBR of c2 is less than c4 then we add c2 to n1. If still we can't break the tie, by default c4 is added to n1
                 for(int i = 0; i < c4_count; i++){
-                    n2[n2_count] = c4[i];
+                    n2[n2_count] = c4[i]; 
                     n2_count++;
                 }
                 for(int i = 0; i < c2_count; i++){
@@ -344,60 +346,65 @@ void split_node(NODE *node, int index){
             }
         }
     }
-    bool splity = a^b;    
+
+    //The following part of code is used to populate the node that has lesser entries than MIN_ENTRIES which is the deficient node and other node is the excess node.
+    bool splity = a^b; 
+    /* used to indicate the splitting axis. splity is true when c1 and c2 are combined as one node and c3 and c4 are combined as other node.
+       In this case, the splitting axis is the horizontal axis and the split occurs along the Y-axis. splity is false otherwise when 
+       splitting axis is vertical axis and split occurs along X-axis with c1-c4 as one group and c2-c3 as the other. */
     while(n1_count < MIN_ENTRIES){
-        int min_num = 0;
+        int min_num = 0; //Stores the index of the node that is closest to the splitting axis in the excess node.
         for(int k = 0; k < n2_count; k++){
-            if(splity){
+            if(splity){ // Finding node closest to horizontal axis
                 if(abs(n2[k]->min[1]-centery) < abs(n2[min_num]->min[1]-centery)){
                     min_num = k;
                 }
-            }else{
+            }else{ // Finding node closest to vertical axis
                 if(abs(n2[k]->min[0]-centerx) < abs(n2[min_num]->min[0]-centerx)){
                     min_num = k;
                 }
             }
         }
-        n1[n1_count] = n2[min_num];
+        n1[n1_count] = n2[min_num]; //Moving element from excess node to deficient node
         n1_count++;
         for(int k = min_num; k < n2_count-1; k++){
-            n2[k] = n2[k+1];
+            n2[k] = n2[k+1]; //Shifting elements in excess node to the left after deletion of one element 
         }
         n2_count--;
     }
     while(n2_count < MIN_ENTRIES){
-        int min_num = 0;
+        int min_num = 0;  //Stores the index of the node that is closest to the splitting axis in the excess node.
         for(int k = 0; k < n1_count; k++){
-            if(splity){
+            if(splity){ // Finding node closest to horizontal axis
                 if(abs(n1[k]->max[1]-centerx) < abs(n1[min_num]->max[1]-centerx)){
                     min_num = k;
                 }
-            }else{
+            }else{ // Finding node closest to vertical axis
                 if(abs(n1[k]->max[0]-centery) < abs(n1[min_num]->max[0]-centery)){
                     min_num = k;
                 }
             }
         }
-        n2[n2_count] = n1[min_num];
+        n2[n2_count] = n1[min_num]; //Moving element from excess node to deficient node
         n2_count++;
         for(int k = min_num; k < n1_count-1; k++){
-            n1[k] = n1[k+1];
+            n1[k] = n1[k+1]; //Shifting elements in excess node to the left after deletion of one element 
         }
         n1[n1_count-1] = NULL;
         n1_count--;
     }
-    for(int i = 0; i<n1_count; i++){
+    for(int i = 0; i<n1_count; i++){ //Moving entries in n1 to node1 and updating count 
         node1->entries[i] = n1[i];
         node1->count++;
     }
-    for(int i = 0; i<n2_count; i++){
+    for(int i = 0; i<n2_count; i++){ //Moving entries in n2 to node2 and updating count
         node2->entries[i] = n2[i];
         node2->count++;
     }
-    main_rect->child = node1;
-    new_rect->child = node2;
-    node->entries[node->count] = new_rect;
-    for(int i = 0; i<main_rect->child->count; i++){
+    main_rect->child = node1; //Assigning node1 as child of main_rect
+    new_rect->child = node2; //Assigning node 2 as child of new_rect
+    node->entries[node->count] = new_rect; //Adding new_rect in the entries of node
+    for(int i = 0; i<main_rect->child->count; i++){ //Updates the MBR boundaries for main_rect
         if(i==0){
             main_rect->min[0] = main_rect->child->entries[i]->min[0];
             main_rect->min[1] = main_rect->child->entries[i]->min[1];
@@ -405,21 +412,21 @@ void split_node(NODE *node, int index){
             main_rect->max[1] = main_rect->child->entries[i]->max[1];
         }
         else{
-            if(main_rect->child->entries[i]->min[0] < main_rect->min[0]){
+            if(main_rect->child->entries[i]->min[0] < main_rect->min[0]){ //Updating the minimum X coordinate of MBR
                 main_rect->min[0] = main_rect->child->entries[i]->min[0];
             }
-            if(main_rect->child->entries[i]->min[1] < main_rect->min[1]){
+            if(main_rect->child->entries[i]->min[1] < main_rect->min[1]){ //Updating the maximum X coordinate of MBR
                 main_rect->min[1] = main_rect->child->entries[i]->min[1];
             }
-            if(main_rect->child->entries[i]->max[0] > main_rect->max[0]){
+            if(main_rect->child->entries[i]->max[0] > main_rect->max[0]){ //Updating the minimum Y coordinate of MBR
                 main_rect->max[0] = main_rect->child->entries[i]->max[0];
             }
-            if(main_rect->child->entries[i]->max[1] > main_rect->max[1]){
+            if(main_rect->child->entries[i]->max[1] > main_rect->max[1]){ //Updating the maximum Y coordinate of MBR
                 main_rect->max[1] = main_rect->child->entries[i]->max[1];
             }
         }
     }
-    for(int i = 0; i<new_rect->child->count; i++){
+    for(int i = 0; i<new_rect->child->count; i++){ //Updates the MBR boundaries for main_rect
         if(i==0){
             new_rect->min[0] = new_rect->child->entries[i]->min[0];
             new_rect->min[1] = new_rect->child->entries[i]->min[1];
@@ -427,21 +434,21 @@ void split_node(NODE *node, int index){
             new_rect->max[1] = new_rect->child->entries[i]->max[1];
         }
         else{
-            if(new_rect->child->entries[i]->min[0] < new_rect->min[0]){
+            if(new_rect->child->entries[i]->min[0] < new_rect->min[0]){ //Updating the minimum X coordinate of MBR
                 new_rect->min[0] = new_rect->child->entries[i]->min[0];
             }
-            if(new_rect->child->entries[i]->min[1] < new_rect->min[1]){
+            if(new_rect->child->entries[i]->min[1] < new_rect->min[1]){ //Updating the maximum X coordinate of MBR
                 new_rect->min[1] = new_rect->child->entries[i]->min[1];
             }
-            if(new_rect->child->entries[i]->max[0] > new_rect->max[0]){
+            if(new_rect->child->entries[i]->max[0] > new_rect->max[0]){ //Updating the minimum Y coordinate of MBR
                 new_rect->max[0] = new_rect->child->entries[i]->max[0];
             }
-            if(new_rect->child->entries[i]->max[1] > new_rect->max[1]){
+            if(new_rect->child->entries[i]->max[1] > new_rect->max[1]){ //Updating the maximum Y coordinate of MBR
                 new_rect->max[1] = new_rect->child->entries[i]->max[1];
             }
         }
     }
-    node->count++;
+    node->count++; //Updates the count of node due to addition of new_rect on account of node split
 }
 
 
