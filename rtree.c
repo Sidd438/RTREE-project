@@ -120,49 +120,55 @@ int choose_subtree(NODE *node, RECT *rect)
 }
 
 void split_node(NODE *node, int index){
-    RECT* main_rect = node->entries[index];
-    RECT* new_rect = (RECT*)malloc(sizeof(RECT));
-    float centerx = (main_rect->max[0] + main_rect->min[0]) / 2;
-    float centery = (main_rect->max[1] + main_rect->min[1]) / 2;
-    NODE *split_node = main_rect->child;
-    NODE *node1 = create_node();
-    NODE *node2 = create_node();
-    RECT* n1[MAX_ENTRIES+1];
-    RECT* n2[MAX_ENTRIES+1];
-    int n1_count = 0;
-    int n2_count = 0;
+    RECT *main_rect = node->entries[index];                      // Getting the concerned rectangle as main_rect
+    RECT *new_rect = (RECT *)malloc(sizeof(RECT));               // Creating a new rectangle for splitting
+    float centerx = (main_rect->max[0] + main_rect->min[0]) / 2; // Calculating the value for x coordinate of center of main_rect(main rectangle)
+    float centery = (main_rect->max[1] + main_rect->min[1]) / 2; // Calculating the value for x coordinate of center of main_rect(main rectangle)
+    NODE *split_node = main_rect->child;                         // Getting the concerned node as main_rect
+    NODE *node1 = create_node();                                 // Creating a new node for splitting
+    NODE *node2 = create_node();                                 // Creating a new node for splitting
+    RECT *n1[MAX_ENTRIES];                                       // Generating a RECT pointer array for getting the rectangles in node n1
+    RECT *n2[MAX_ENTRIES];                                       // Generating a RECT pointer array for getting the rectangles in node n2
+    int n1_count = 0;                                            // initializing n1_count to 0, which is the counter for children to be added in n1
+    int n2_count = 0;                                            // initializing n2_count to 0, which is the counter for children to be added in n2
     int n1_max[2] = {0,0};
     int n1_min[2] = {0,0};
-    RECT* c1[MAX_ENTRIES+1];
-    RECT* c2[MAX_ENTRIES+1];
-    RECT* c3[MAX_ENTRIES+1];
-    RECT* c4[MAX_ENTRIES+1];
-    int c1_count = 0;
-    int c2_count = 0;
-    int c3_count = 0;
-    int c4_count = 0;
+    RECT *c1[MAX_ENTRIES];                                       // Array for the pointer of RECT, in which rectangles of corner 1 will be added
+    RECT *c2[MAX_ENTRIES];                                       // Array for the pointer of RECT, in which rectangles of corner 2 will be added
+    RECT *c3[MAX_ENTRIES];                                       // Array for the pointer of RECT, in which rectangles of corner 3 will be added
+    RECT *c4[MAX_ENTRIES];                                       // Array for the pointer of RECT, in which rectangles of corner 4 will be added
+    int c1_count = 0;                                            // initializing c1_count to 0, which is the counter for children to be added in corner c1
+    int c2_count = 0;                                            // initializing c2_count to 0, which is the counter for children to be added in corner c2
+    int c3_count = 0;                                            // initializing c3_count to 0, which is the counter for children to be added in corner c3
+    int c4_count = 0;                                            // initializing c4_count to 0, which is the counter for children to be added in corner c4
     int c2_min[2] = {0,0};
     int c2_max[2] = {0,0};
     int c4_min[2] = {0, 0};
     int c4_max[2] = {0, 0};
-    bool a = false;
-    bool b = false;
-    for(int i = 0; i< split_node->count; i++){
-        float x = ((float) split_node->entries[i]->max[0] + (float) split_node->entries[i]->min[0]) / 2;
-        float y = ((float) split_node->entries[i]->max[1] + (float) split_node->entries[i]->min[1]) / 2;
-        if(x <= centerx && y <= centery){
+    bool a = false;                                              // Initializing a to False
+    bool b = false;                                              // Initializing b to False
+    for (int i = 0; i < split_node->count; i++)
+    {                                                                                    // all the split_node(s) are traversed using a for loop.
+        float x = (split_node->entries[i]->max[0] + split_node->entries[i]->min[0]) / 2; // x coordinate of center of split_node(s) is calculated
+        float y = (split_node->entries[i]->max[1] + split_node->entries[i]->min[1]) / 2; // y coordinate of center of split_node(s) is calculated
+        // The if-else statements are used to allot each split_node a corner.
+        if (x <= centerx && y <= centery)
+        { // If the x <= centerx & y <= centery, split_node is allocated to center1
             c1[c1_count] = split_node->entries[i];
             c1_count++;
         }
-        else if(x >= centerx && y <= centery){
+        else if (x >= centerx && y <= centery)
+        { // If the x >= centerx & y <= centery, split_node is alloted to center2
             c2[c2_count] = split_node->entries[i];
             c2_count++;
         }
-        else if(x <= centerx && y >= centery){
+        else if (x <= centerx && y >= centery)
+        { // If the x <= centerx & y >= centery, split_node is alloted to center3
             c4[c4_count] = split_node->entries[i];
             c4_count++;
         }
-        else if(x >= centerx && y >= centery){
+        else if (x >= centerx && y >= centery)
+        { // If the x >= centerx & y >= centery, split_node is alloted to center1
             c3[c3_count] = split_node->entries[i];
             c3_count++;
         }
@@ -195,22 +201,30 @@ void split_node(NODE *node, int index){
             c4_min[1] = c4[i]->min[1];
         }
     }
-    if(c1_count > c3_count){
+    // Now, as all the split_node(s) are allocated different corners and we have the counter for each node, these statements allot rectangles in different node.
+    if (c1_count > c3_count)
+    { // If c1_count > c3_count, then a is set True, all the rectangles in c1 are alloted to node1(n1) and that of c3 are alloted to n2.
         a = true;
-        for(int i = 0; i < c1_count; i++){
+        for (int i = 0; i < c1_count; i++)
+        {
             n1[n1_count] = c1[i];
             n1_count++;
         }
-        for(int i = 0; i < c3_count; i++){
+        for (int i = 0; i < c3_count; i++)
+        {
             n2[n2_count] = c3[i];
             n2_count++;
         }
-    }else{
-        for(int i = 0; i < c3_count; i++){
+    }
+    else
+    { // If c1_count > c3_count is not True, a is not updated, all the rectangles in c3 are allocated to node1(n1) and that of c1 are allocated to n2.
+        for (int i = 0; i < c3_count; i++)
+        {
             n1[n1_count] = c3[i];
             n1_count++;
         }
-        for(int i = 0; i < c1_count; i++){
+        for (int i = 0; i < c1_count; i++)
+        {
             n2[n2_count] = c1[i];
             n2_count++;
         }
@@ -229,7 +243,8 @@ void split_node(NODE *node, int index){
             n1_min[1] = n1[i]->min[1];
         }
     }
-    if(c2_count > c4_count){
+    if(c2_count > c4_count)
+    { // If c2_count > c4_count is True, b is set True, all the rectangles in c2 are allocated to node2(n2) and that of c4 are allocated to n1.
         b = true;
         for(int i = 0; i < c2_count; i++){
             n2[n2_count] = c2[i];
@@ -239,7 +254,9 @@ void split_node(NODE *node, int index){
             n1[n1_count] = c4[i];
             n1_count++;
         }
-    }else if(c4_count > c2_count){
+    }
+    else if (c4_count > c2_count)
+    { // If c2_count > c4_count is not True, b is not updated, all the rectangles in c4 are allocated to node2(n2) and that of c2 is allocated to n1.
         for(int i = 0; i < c4_count; i++){
             n2[n2_count] = c4[i];
             n2_count++;
@@ -248,7 +265,9 @@ void split_node(NODE *node, int index){
             n1[n1_count] = c2[i];
             n1_count++;
         }
-    }else{
+    }
+    else
+    {
         int c2_enlarged_area = 0;
         int c4_enlarged_area = 0;
         int c2_area = (c2_max[0]-c2_min[0])*(c2_max[1]-c2_min[1]);
@@ -325,8 +344,6 @@ void split_node(NODE *node, int index){
                 }
             }
         }
-
-
     }
     bool splity = a^b;    
     while(n1_count < MIN_ENTRIES){
