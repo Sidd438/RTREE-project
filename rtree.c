@@ -525,30 +525,36 @@ void insert_into_tree(RTREE *rtree, RECT *rect){
     }
 }
 
-
-
-void print_node(NODE *node, int level, int* total){
-    for(int i = 0; i < level; i++){
+void print_node(NODE* node, int level, int* total)
+{
+    for (int i = 0; i < level; i++)
+    {
         printf("    ");
     }
     printf("External Node: %d\n", level);
-    for(int i = 0; i < level; i++){
+    for (int i = 0; i < level; i++)
+    {
         printf("    ");
     }
-    printf("Count: %d\n", node->count);
-    for(int i = 0; i < node->count; i++){
-        for(int j = 0; j < level; j++){
+    printf("Count: %d\n", node->count); // prints the count
+    for (int i = 0; i < node->count; i++)
+    {
+        for (int j = 0; j < level; j++)
+        {
             printf("    ");
         }
-        printf("Rectangle Number: %d\n", i); 
-        if(is_leaf(node)){
+        printf("Rectangle Number: %d\n", i);
+        if (is_leaf(node))
+        { // if the node is leaf print the leaf
             for (int j = 0; j < level; j++)
             {
                 printf("    ");
             }
             printf("Leaf: X-%d Y-%d\n", node->entries[i]->min[0], node->entries[i]->min[1]);
             *total = *total + 1;
-        }else{
+        }
+        else
+        {
             for (int j = 0; j < level; j++)
             {
                 printf("    ");
@@ -564,8 +570,7 @@ void print_node(NODE *node, int level, int* total){
                 printf("    ");
             }
             printf("Top Right: X-%d Y-%d\n", node->entries[i]->max[0], node->entries[i]->max[1]);
-            print_node(node->entries[i]->child, level+1, total);
-
+            print_node(node->entries[i]->child, level + 1, total); // if it is not leaf go deeper and print its child
         }
     }
 }

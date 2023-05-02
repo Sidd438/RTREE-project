@@ -1,3 +1,3 @@
 gcc rtree.c
 
-./a.exe <name of file>
+./a.exe {Enter the name of the file here}
