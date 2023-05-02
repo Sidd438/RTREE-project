@@ -531,7 +531,7 @@ void print_node(NODE *node, int level, int* total){
     for(int i = 0; i < level; i++){
         printf("    ");
     }
-    printf("Node: %d\n", level);
+    printf("External Node: %d\n", level);
     for(int i = 0; i < level; i++){
         printf("    ");
     }
@@ -540,7 +540,7 @@ void print_node(NODE *node, int level, int* total){
         for(int j = 0; j < level; j++){
             printf("    ");
         }
-        printf("Entry: %d\n", i); 
+        printf("Rectangle Number: %d\n", i); 
         if(is_leaf(node)){
             for (int j = 0; j < level; j++)
             {
@@ -553,7 +553,7 @@ void print_node(NODE *node, int level, int* total){
             {
                 printf("    ");
             }
-            printf("External Node\n");
+            printf("MBR\n");
             for (int j = 0; j < level; j++)
             {
                 printf("    ");
