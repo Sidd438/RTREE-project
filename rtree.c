@@ -99,7 +99,7 @@ int choose_subtree(NODE *node, RECT *rect)
         }
         int enlarged_area = (x2 - x1) * (y2 - y1); // new area created if rect was inserted
         int add_area = enlarged_area - area; // additional area added
-        if (min_add_area < add_area | i == 0) 
+        if (min_add_area > add_area | i == 0) 
         {
             min_area = area;
             min_index = i;  // finding which node will have minimum change in area if rect was inserted
